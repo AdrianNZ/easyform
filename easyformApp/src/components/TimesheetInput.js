@@ -27,7 +27,7 @@ class TimesheetInput extends Component {
         axios.post('http://localhost:5000/api/timesheet/start', startData)
             .then(res => {
                 this.setState({ name: '', job: '', errors: null });
-                this.refs.toast.show('submit success');
+                this.refs.toast.show(res.data.msg);
             })
             .catch(err => {
                 this.setState({ errors: err.response.data });
@@ -44,7 +44,7 @@ class TimesheetInput extends Component {
         axios.post('http://localhost:5000/api/timesheet/finish', finishData)
             .then(res => {
                 this.setState({ name: '', job: '', errors: null });
-                this.refs.toast.show('submit success');
+                this.refs.toast.show(res.data.msg);
             })
             .catch(err => {
                 this.setState({ errors: err.response.data });

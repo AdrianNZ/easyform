@@ -41,16 +41,41 @@ router.post('/start', ( req, res ) => {
 
     // check validation
     if ( !isValid ) {
-        return res.status(400).send(errors);
+        return res.status(400).json(errors);
     }
-    // get input value
-    const newTimeSheet = new TimeSheet({
-        job: req.body.job,
-        name: req.body.name
-    });
 
-    // save
-    newTimeSheet.save().then(timesheet => res.json(timesheet))
+    // todo!! check user already worked
+    TimeSheet.find(
+        {
+            $and: [
+                { job: req.body.job },
+                { name: req.body.name }
+            ]
+        })
+        .sort({ from: -1 })
+        .limit(1)
+        .then(timesheet => {
+            // return res.send(timesheet);
+
+            // get request value
+            const newTimeSheet = new TimeSheet({
+                job: req.body.job,
+                name: req.body.name
+            });
+
+            // if timesheet record not found
+            if ( timesheet.length === 0 ) {
+                // save
+                return newTimeSheet.save().then(() => res.json({ msg: 'Save success' }))
+            }
+
+            if ( !timesheet[0].to ) {
+                return res.status(400).json({ msg: 'This user already worked' })
+            }
+            // save
+            newTimeSheet.save().then(() => res.json({ msg: 'Save success' }))
+        })
+        .catch(err => res.status(404).json({ msg: 'Not found' }))
 });
 
 
@@ -63,7 +88,7 @@ router.post('/finish', ( req, res ) => {
 
     // check validation
     if ( !isValid ) {
-        return res.status(400).send(errors);
+        return res.status(400).json(errors);
     }
 
     TimeSheet.findOne(
@@ -73,16 +98,20 @@ router.post('/finish', ( req, res ) => {
                 { name: req.body.name }
             ]
         })
+        .sort({ from: -1 })
+        .limit(1)
         .then(timesheet => {
-            // todo!!! check user does not start work
-            // todo!!! block update old data
+            // return res.send(timesheet);
 
+            if ( timesheet.to ) {
+                return res.status(400).json({ msg: 'This user already finished work' })
+            }
             // finish time
             timesheet.to = Date.now();
 
-            timesheet.save().then(timesheet => res.json(timesheet))
+            timesheet.save().then(() => res.json({ msg: 'Save success' }))
         })
-        .catch(err => res.status(404).send({ msg: 'There is no timesheet data' }))
+        .catch(err => res.status(404).json({ msg: 'There is no timesheet data' }))
 });
 
 module.exports = router;
